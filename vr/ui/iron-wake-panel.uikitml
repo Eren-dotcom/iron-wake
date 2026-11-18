@@ -1,0 +1,47 @@
+<!-- Iron Wake panel — Horizon kit, dark scheme (iwsdk.config.json). -->
+<style>
+  .panel-root { flex-direction: column; width: 430px; }
+  .panel-content { flex-direction: column; gap: 7px; padding: 22px; }
+  .eyebrow { color: #6b5a00; font-size: 14px; font-weight: 700; letter-spacing: 1.4px; }
+  .eyebrow:dark { color: #7de8ff; }
+  .heading { color: #1c1d20; font-size: 30px; font-weight: 700; line-height: 36px; }
+  .heading:dark { color: #fafaf7; }
+  .body { color: #3a3b40; font-size: 20px; line-height: 27px; }
+  .body:dark { color: #dddfe3; }
+  .button { justify-content: flex-start; margin-left: 22px; margin-right: 22px; margin-bottom: 12px; }
+  .button-label { transform-translate-y: 1px; }
+  .last { margin-bottom: 22px; }
+</style>
+<Panel class="panel-root">
+  <div class="panel-content">
+    <div class="eyebrow">IRON WAKE · STRIKE FLEET</div>
+    <div class="heading">Hold the straits</div>
+    <div class="body">Enemy fleets are closing on Kestrel Straits. You are the deck crew and the fire control, all in your hands.</div>
+    <div class="body">Pinch a missile from the rack, carry it to the glowing launch ring, and let go. Sink every ship before it gets into firing range — every third wave brings the Kraken Dreadnought.</div>
+    <div id="progress-text" class="body">Wave: 1 · Score: 0 · Best: 0</div>
+  </div>
+  <Button id="xr-button" class="button">
+    <ButtonIcon>
+      <RectangleGoggles></RectangleGoggles>
+    </ButtonIcon>
+    <ButtonLabel class="button-label">Enter XR</ButtonLabel>
+  </Button>
+  <Button id="exit-button" class="button" style="display: none">
+    <ButtonIcon>
+      <LogIn></LogIn>
+    </ButtonIcon>
+    <ButtonLabel class="button-label">Exit to Browser</ButtonLabel>
+  </Button>
+  <Button id="pause-button" class="button">
+    <ButtonLabel id="pause-label" class="button-label">Pause</ButtonLabel>
+  </Button>
+  <Button id="replay-button" class="button">
+    <ButtonLabel class="button-label">Restart Battle</ButtonLabel>
+  </Button>
+  <Button id="sound-button" class="button">
+    <ButtonLabel id="sound-label" class="button-label">Sound: On</ButtonLabel>
+  </Button>
+  <Button id="big-button" class="button last">
+    <ButtonLabel id="big-label" class="button-label">Big Targets: Off</ButtonLabel>
+  </Button>
+</Panel>
