@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0d1520">
 <meta name="description" content="Iron Wake: Strike Fleet — High-Definition 2D & Vector Naval Warship Combat Simulator. One file, all procedural, no network required.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M3 21 L29 21 L24.5 27 L7.5 27 Z' fill='%234de8d2'/%3E%3Crect x='13.5' y='11' width='5' height='8' fill='%23eef4f8'/%3E%3Crect x='15.4' y='6' width='1.6' height='6' fill='%23ffcb6b'/%3E%3C/svg%3E">
+<meta property="og:title" content="Iron Wake: Strike Fleet — 2D & HD Naval Combat">
+<meta property="og:description" content="Command a destroyer, corvette or battleship through endless waves and a super-dreadnought boss. One HTML file, all procedural, no network required.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://eren-dotcom.github.io/iron-wake/">
+<meta name="twitter:card" content="summary">
 <title>Iron Wake: Strike Fleet — 2D &amp; HD Naval Combat</title>
 <style>
 :root {
@@ -814,6 +820,10 @@ button svg { flex: none; }
 .tac-btn.upg:hover{background:rgba(68,54,20,0.95);border-color:#ffd86b;}
 .tac-btn kbd{background:rgba(0,0,0,0.45);padding:1px 4px;border-radius:3px;font-size:9px;color:#8be8dc;border:1px solid rgba(255,255,255,0.14);}
 
+#hull-vignette { position: fixed; inset: 0; pointer-events: none; z-index: 40; opacity: 0; transition: opacity 0.35s; background: radial-gradient(ellipse at center, transparent 52%, rgba(255, 40, 60, 0.38) 100%); }
+#hull-vignette.on { opacity: 1; animation: hullpulse 1.1s ease-in-out infinite; }
+@keyframes hullpulse { 50% { opacity: 0.45; } }
+.service-record { font: 600 11px/1.5 var(--mono); letter-spacing: 0.08em; color: var(--gold); margin-top: 12px; min-height: 16px; }
 </style>
 </head>
 <body>
@@ -837,6 +847,7 @@ button svg { flex: none; }
 </svg>
 
 <div class="app" id="app">
+  <div id="hull-vignette" aria-hidden="true"></div>
   <header class="mast">
     <div class="brand">
       <svg class="brand-mark" aria-hidden="true" viewBox="0 0 42 30">
@@ -933,6 +944,7 @@ button svg { flex: none; }
             <span class="ftag">Submarines, Mines &amp; CIWS</span>
             <span class="ftag">4 Camera Perspectives</span>
           </div>
+          <div class="service-record" id="service-record"></div>
           <div class="title-actions">
             <button class="launch" id="start" disabled>
               <svg class="play-icon" viewBox="0 0 12 14" fill="currentColor" aria-hidden="true"><path d="M1 1.2 11 7 1 12.8Z"/></svg>
@@ -1595,6 +1607,22 @@ let startedSteering=false, keys=new Set(), pointer={x:0,y:0,hold:false,age:0,via
 let basis={r:[1,0,0],u:[0,1,0],f:[0,0,1]}, rack=[0,0,0,0,0,0], nextRail=0, torpedoes=[0,0,0,0], nextTorp=0;
 let hp=150, maxHp=150, shield=120, maxShield=120, shieldDelay=0, smokeCanisters=6, smokeReload=0, empCharge=100, overdrive=0, smokeScreenTimer=0;
 let gunCooldown=0, fireIdle=0, torpIdle=0, score=0, kills=0, combo=1, comboTimer=0, wave=1, waveClearedTimer=0;
+// Career record, kept across runs in localStorage.
+let record={bestScore:0,bestWave:1,totalKills:0,runs:0}, recordBeaten=false;
+try{ Object.assign(record, JSON.parse(localStorage.getItem('ironwake-record-v1')||'{}')); }catch(e){}
+function persistRecord(){ try{ localStorage.setItem('ironwake-record-v1', JSON.stringify(record)); }catch(e){} }
+function saveRecord(){
+  record.runs++; record.totalKills+=kills;
+  record.bestScore=Math.max(record.bestScore,score);
+  record.bestWave=Math.max(record.bestWave,wave);
+  persistRecord(); refreshRecordLine();
+}
+function refreshRecordLine(){
+  let el=$('service-record'); if(!el) return;
+  el.textContent = record.bestScore>0
+    ? `SERVICE RECORD \u2014 BEST ${record.bestScore.toLocaleString()} PTS \u00B7 WAVE ${record.bestWave} \u00B7 ${record.totalKills} CAREER KILLS \u00B7 ${record.runs} SORTIES`
+    : 'SERVICE RECORD \u2014 NO SORTIES YET. YOUR FIRST RUN SETS THE RECORD.';
+}
 let rounds=[], torpList=[], shells=[], enemyMissiles=[], flaresList=[], puffs=[], impacts=[], shockwaves=[], popups=[], supplyRings=[];
 let wake=[], wakeAcc=0, wind=[1.55,0,.36], hitCounter=0, rolls=0, shotEase=0, shotTime=0;
 let enemies=[], lockedTarget=null, lockProgress=0, incomingAlert=0;
@@ -1834,6 +1862,8 @@ function resetShip(){
   rounds=[]; torpList=[]; shells=[]; enemyMissiles=[]; flaresList=[]; puffs=[]; impacts=[]; shockwaves=[]; popups=[];
   rack=[0,0,0,0,0,0]; torpedoes=[0,0,0,0]; nextRail=0; nextTorp=0;
   fireIdle=0; torpIdle=0; gunCooldown=0; noticeUntil=0; hitCounter=0; rolls=0; wake=[]; shotEase=shotTime=0;
+  if(score>0 || kills>0) saveRecord();
+  recordBeaten=false;
   score=0; kills=0; combo=1; comboTimer=0;
   waterDepth = Math.max(5, -heightAt(player[0], player[2]));
   startedSteering=false; clearInput();
@@ -4533,7 +4563,10 @@ function updateUI(force=false){
   if($('emp-bar'))   $('emp-bar').style.width   = `${clamp(empCharge,0,100)}%`;
   if($('emp-val'))   $('emp-val').textContent   = empCharge>=100 ? 'READY' : `${Math.floor(empCharge)}%`;
   if($('score-val')) $('score-val').textContent = score.toLocaleString();
-  if($('kills-val')) $('kills-val').textContent = kills + ' SUNK';
+  if($('kills-val')) $('kills-val').textContent = kills + ' SUNK' + (combo>1 ? ' \u00B7 COMBO x'+combo : '');
+  let hv=$('hull-vignette'); if(hv) hv.classList.toggle('on', state==='flight' && hp<40);
+  if(record.bestScore>0 && score>record.bestScore && !recordBeaten){ recordBeaten=true; notice('\uD83C\uDFC6 NEW FLEET RECORD \u2014 BEST SCORE BEATEN!', 2.4); }
+  if(wave>record.bestWave){ record.bestWave=wave; persistRecord(); }
   if($('view-name')) $('view-name').textContent = modes[view];
 
   // Update Tactical Dock & Upgrades
@@ -4606,6 +4639,7 @@ function resize(){
   A = W / H;
 }
 window.addEventListener('resize', resize);
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden && state==='flight') togglePause(); });
 
 // Button & Keyboard Wiring
 if($('start'))      $('start').onclick      = () => begin(1);
@@ -4734,6 +4768,7 @@ stage.addEventListener('contextmenu', e => e.preventDefault());
   if($('load')) $('load').hidden = true;
   $('load')?.classList.add('done');
   resetShip();
+  refreshRecordLine();
   updateUI(true);
 }
 
